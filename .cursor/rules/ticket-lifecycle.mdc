@@ -1,0 +1,47 @@
+---
+description: Ticket status machine, terminal rules, transitions, and CSV export scope
+globs: "**/tickets/**,**/ticket*/**,**/models.py,**/services*.py,**/serializers*.py,**/views*.py,**/tests/**,*Ticket*,*ticket*"
+alwaysApply: false
+---
+
+# Ticket lifecycle
+
+Single source of truth for transitions must live on the backend (one table / constant). Detail responses expose `allowedTransitions`; the UI only renders what the API returns.
+
+## Allowed transitions (exact)
+
+- `OPEN` → `IN_PROGRESS`
+- `OPEN` → `CANCELLED`
+- `IN_PROGRESS` → `RESOLVED`
+- `IN_PROGRESS` → `CANCELLED`
+- `RESOLVED` → `CLOSED`
+
+Wire values are uppercase `TextChoices` (`IN_PROGRESS`, not `"In Progress"`).
+
+## Create and update
+
+- New tickets always start as `OPEN`; client cannot set initial status
+- Status changes only via dedicated transition endpoint — never via field PATCH
+- PATCH of `status` → reject with a clear message pointing at the transition endpoint
+- Field updates (title, description, priority, assignee) on `CLOSED` / `CANCELLED` → **409**, no changes
+
+## Invalid transitions
+
+- Anything outside the allow-list (including same-status, skips, reopen) → **409 Conflict**
+- Status in DB must be unchanged
+- Response must name current status, attempted status, and legal alternatives
+- Unknown status string (not a valid enum) → **400** (malformed), not 409
+
+## Terminal states
+
+- `CLOSED` and `CANCELLED` are terminal — **no reopen**
+- Comments are allowed on any status, including terminal (append-only; no edit/delete)
+
+## List vs export
+
+- List: all tickets (authenticated); support status/priority/assignee filters and `q` on title/description
+- Export CSV: only `created_by = request.user`; core fields + comment count; header-only CSV if none
+
+## Tests
+
+- Integration tests must cover the **full** transition matrix (valid succeed, invalid rejected), not a sample

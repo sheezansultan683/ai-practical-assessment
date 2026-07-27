@@ -1,0 +1,44 @@
+---
+description: Stack, layout, auth, secrets, and coding conventions for this project
+alwaysApply: true
+---
+
+# Stack and conventions
+
+Canonical product decisions live in `requirements-analysis.md`. Do not invent conflicting rules.
+
+## Stack
+
+- Backend: Django 5, DRF, PostgreSQL 16 (Docker Compose), SimpleJWT, drf-spectacular
+- Frontend: React + Vite + TypeScript
+- Auth: full-app JWT — every ticket/comment endpoint requires authentication
+
+## Identity
+
+- Custom user: `USERNAME_FIELD = "email"`; login with email + password
+- Seeded users only — no registration, no user CRUD UI
+- `created_by` always from `request.user`; ignore client-supplied values
+- `role` is stored and returned; do not gate Core endpoints on role
+
+## Architecture
+
+- Business rules live in a **service layer**, not serializers or views
+- Backend is the sole authority on validation and lifecycle; frontend must not be trusted to enforce either
+- One consistent API error envelope for all errors (including DRF validation)
+- OpenAPI from code (drf-spectacular), not hand-maintained docs
+
+## Secrets and config
+
+- No secrets in the repo. Read from environment with **no fallback defaults** — missing values fail loudly
+- Provide `.env.example` with placeholder keys only
+
+## Frontend auth tokens
+
+- Access token in memory; refresh token in `localStorage`
+- On 401: attempt one refresh + retry, then redirect to login
+
+## Do not
+
+- Commit `.env`, keys, or real credentials
+- Hardcode transition allow-lists in the frontend (see ticket-lifecycle rule)
+- Add ticket/comment delete (hard or soft) unless the brief changes
