@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Ticket lifecycle
 
-Single source of truth for transitions must live on the backend (one table / constant). Detail responses expose `allowedTransitions`; the UI only renders what the API returns.
+Single source of truth for transitions must live on the backend (one table / constant). Detail responses expose `allowed_transitions`; the UI only renders what the API returns.
 
 ## Allowed transitions (exact)
 

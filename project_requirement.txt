@@ -11,10 +11,10 @@ User        (seeded only — no user-management UI required)
  
 Ticket
 - id, title, description, priority, status,
-  assignedTo, createdBy, createdAt, updatedAt
+  assigned_to, created_by, created_at, updated_at
  
 Comment
-- id, ticketId, message, createdBy, createdAt
+- id, ticket_id, message, created_by, created_at
 Features
 Create a ticket.
 List tickets.

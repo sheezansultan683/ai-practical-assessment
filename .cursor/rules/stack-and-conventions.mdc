@@ -26,6 +26,7 @@ Canonical product decisions live in `requirements-analysis.md`. Do not invent co
 - Backend is the sole authority on validation and lifecycle; frontend must not be trusted to enforce either
 - One consistent API error envelope for all errors (including DRF validation)
 - OpenAPI from code (drf-spectacular), not hand-maintained docs
+- Wire format: all JSON keys `snake_case` (`created_by`, `assigned_to`, `allowed_transitions`, `created_at`, `updated_at`, `ticket_id`) — never camelCase on the API
 
 ## Secrets and config
 

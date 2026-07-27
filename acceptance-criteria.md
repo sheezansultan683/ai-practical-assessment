@@ -45,7 +45,7 @@ An item may carry more than one tag when verification spans layers.
 - [ ] `[int]` `[ui]` Ticket list uses page-number pagination with default page size 20 (`A-16`)
 - [ ] `[insp]` Filter and search columns used by the list endpoint are backed by indexes (`NFR-9`)
 - [ ] `[ui]` `[int]` **(brief)** User can open a ticket detail view with full fields and comments (`FR-16`)
-- [ ] `[int]` `[ui]` Detail response includes `allowedTransitions` for the current status (`FR-17`, `NFR-3`)
+- [ ] `[int]` `[ui]` Detail response includes `allowed_transitions` for the current status (`FR-17`, `NFR-3`)
 - [ ] `[ui]` `[int]` **(brief)** User can update ticket fields and reassign (title, description, priority, assignee) on a non-terminal ticket (`FR-18`)
 - [ ] `[int]` Status cannot be changed via the field-update endpoint (`FR-19`)
 - [ ] `[int]` `[ui]` Field updates on `CLOSED` or `CANCELLED` tickets are rejected; UI disables the edit form (`FR-20`, `A-7`)
@@ -57,7 +57,7 @@ An item may carry more than one tag when verification spans layers.
 - [ ] `[int]` Status changes use a dedicated transition endpoint, separate from field updates (`FR-22`, `A-9`)
 - [ ] `[int]` `[ui]` These transitions succeed: `OPEN→IN_PROGRESS`, `OPEN→CANCELLED`, `IN_PROGRESS→RESOLVED`, `IN_PROGRESS→CANCELLED`, `RESOLVED→CLOSED` (`FR-23`)
 - [ ] `[int]` `[ui]` **(brief)** Status changes only through valid transitions; invalid ones are rejected (`FR-23`, `FR-24`)
-- [ ] `[insp]` `[ui]` UI only offers actions from `allowedTransitions`; does not hardcode the allow-list (`NFR-2`, `NFR-3`)
+- [ ] `[insp]` `[ui]` UI only offers actions from `allowed_transitions`; does not hardcode the allow-list (`NFR-2`, `NFR-3`)
 - [ ] `[int]` `CLOSED` and `CANCELLED` are terminal; no reopen path (`A-5`)
 
 ### Comments
