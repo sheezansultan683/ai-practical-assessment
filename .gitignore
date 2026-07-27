@@ -87,6 +87,7 @@ Desktop.ini
 # Docker
 docker-compose.override.yml
 
-# Cursor / local agent (optional local state)
-.cursor/
+# Cursor / local agent (ignore local state; keep committed project rules)
+.cursor/*
 !.cursor/rules/
+!.cursor/rules/**
