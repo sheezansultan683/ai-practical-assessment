@@ -183,7 +183,7 @@ Still need your call on **point 1** (full-app JWT vs auth only on create/comment
 
 **User**
 
-Ok this looks good we can now finalize the plan and create requirements-analysis.md
+Ok this looks good we can now finalize the plan and create requirements_analysis.md
 
 ---
 
@@ -193,7 +193,7 @@ Ok this looks good we can now finalize the plan and create requirements-analysis
 
 
 
-Point 1 wasn’t answered, so I’m locking **full-app JWT** (login required for all ticket APIs) — it keeps `created_by` honest and matches SimpleJWT. Drafting the final plan now; `requirements-analysis.md` will be the first deliverable once you approve.
+Point 1 wasn’t answered, so I’m locking **full-app JWT** (login required for all ticket APIs) — it keeps `created_by` honest and matches SimpleJWT. Drafting the final plan now; `requirements_analysis.md` will be the first deliverable once you approve.
 
 ---
 
@@ -217,7 +217,7 @@ Plan is updated with your confirmation.
 
 Everything else stays as agreed: terminal Closed/Cancelled, comments allowed, field edits frozen, CSV = `created_by = request.user`, seeded users only.
 
-First step on approval: write `requirements-analysis.md`, then scaffold and build. Approve the plan when you want to start.
+First step on approval: write `requirements_analysis.md`, then scaffold and build. Approve the plan when you want to start.
 
 ---
 
@@ -235,14 +235,14 @@ To-do's from the plan have already been created. Do not create them again. Mark 
 
 
 
-Starting with the first todo: I'll check the workspace, then create `requirements-analysis.md`.
+Starting with the first todo: I'll check the workspace, then create `requirements_analysis.md`.
 
 
 ---
 
 **User**
 
-can you please add the plan in new file requirements-analysis.md
+can you please add the plan in new file requirements_analysis.md
 
 ---
 
@@ -252,10 +252,10 @@ can you please add the plan in new file requirements-analysis.md
 
 
 
-Creating `requirements-analysis.md` with the locked decisions, gaps, and API sketch from the plan.
+Creating `requirements_analysis.md` with the locked decisions, gaps, and API sketch from the plan.
 
 
-Created [`requirements-analysis.md`](requirements-analysis.md) at the repo root. It includes:
+Created [`requirements_analysis.md`](requirements_analysis.md) at the repo root. It includes:
 
 - Spec gaps (state machine finals, CSV vs auth, other unspecified items)
 - Locked decisions (full-app JWT, terminal Closed/Cancelled, comments allowed, field freeze, etc.)
@@ -269,7 +269,7 @@ The plan file itself was not edited. Say when you want to continue with scaffold
 
 **User**
 
-I have updated the requirements-analysis.md a little to use the format # Requirement Analysis
+I have updated the requirements_analysis.md a little to use the format # Requirement Analysis
 ## Selected Project Option
 ## My Understanding (in your own words)
 ## Functional Requirements  /  ## Non-Functional Requirements
@@ -285,7 +285,7 @@ I have updated the requirements-analysis.md a little to use the format # Require
 
 
 
-I'll read your updated `requirements-analysis.md` and align with that structure.
+I'll read your updated `requirements_analysis.md` and align with that structure.
 
 Read it — clear upgrade from the earlier sketch. The important build deltas vs what we had locked before:
 
@@ -303,7 +303,7 @@ Read it — clear upgrade from the earlier sketch. The important build deltas vs
 
 Assumptions A-5–A-7 and clarifications C-1–C-7 still match what we agreed (terminal Closed/Cancelled, comments ok, fields frozen).
 
-When you want to start the build, say the word and I’ll implement against this file (and `acceptance-criteria.md` if you’ve added that too).
+When you want to start the build, say the word and I’ll implement against this file (and `acceptance_criteria.md` if you’ve added that too).
 
 ---
 
@@ -395,13 +395,13 @@ Yes — and those two names are a good split. Your stretch already calls out “
 
 **Why two files:** one concern per rule, keep each short and actionable. Lifecycle rules are the signature judgment area — worth isolating so they load when you touch ticket code without bloating every unrelated chat.
 
-**What not to put in rules:** full FR tables from `requirements-analysis.md`. Rules should be “when coding, do X / never do Y,” with a short pointer to the analysis doc for the long rationale.
+**What not to put in rules:** full FR tables from `requirements_analysis.md`. Rules should be “when coding, do X / never do Y,” with a short pointer to the analysis doc for the long rationale.
 
 **Optional later (not needed now):** a third rule for frontend-only patterns (`**/*.{tsx,ts}`) if the React side grows.
 
 Also: your `.gitignore` currently ignores `.cursor/` but allows `!.cursor/rules/` — so the rules will be committed, which is what you want for the stretch evidence.
 
-If you want, I can draft both `.mdc` files next from the locked decisions in `requirements-analysis.md`.
+If you want, I can draft both `.mdc` files next from the locked decisions in `requirements_analysis.md`.
 
 ---
 
@@ -417,7 +417,7 @@ yes please go ahead
 
 
 
-Drafting both Cursor rules from the locked decisions in `requirements-analysis.md`.
+Drafting both Cursor rules from the locked decisions in `requirements_analysis.md`.
 
 Created both rules and tightened `.gitignore` so they stay commit-able.
 
@@ -433,7 +433,7 @@ Also updated `.gitignore` so `.cursor/*` is ignored but `.cursor/rules/**` is no
 
 **User**
 
-we have  now @requirements-analysis.md  and required.mdc file now we work on creating acceptance_criteria.md  in this format # Acceptance Criteria
+we have  now @requirements_analysis.md  and required.mdc file now we work on creating acceptance_criteria.md  in this format # Acceptance Criteria
 ## Core  - [ ] ...   ## Validation  - [ ] ...
 ## Error Handling  - [ ] ...   ## Testing  - [ ] ...
 ## Documentation  - [ ] ...
@@ -447,7 +447,7 @@ we have  now @requirements-analysis.md  and required.mdc file now we work on cre
 
 
 
-I'll draft `acceptance_criteria.md` from `requirements-analysis.md` and the Cursor rules, using your section layout and FR/NFR traceability.
+I'll draft `acceptance_criteria.md` from `requirements_analysis.md` and the Cursor rules, using your section layout and FR/NFR traceability.
 
 Created [`acceptance_criteria.md`](acceptance_criteria.md) with your section layout:
 
@@ -457,9 +457,9 @@ Created [`acceptance_criteria.md`](acceptance_criteria.md) with your section lay
 - **Testing** — full transition matrix and related integration checks
 - **Documentation** — analysis, rules, README, OpenAPI, Docker, secrets
 
-Each checkbox cites `FR-*` / `NFR-*` (or assumption/edge where useful) so it traces back to `requirements-analysis.md`.
+Each checkbox cites `FR-*` / `NFR-*` (or assumption/edge where useful) so it traces back to `requirements_analysis.md`.
 
-Note: the analysis doc mentions `acceptance-criteria.md` (hyphen); this file uses your underscore name. Say if you want the analysis reference updated to match.
+Note: the analysis doc mentions `acceptance_criteria.md` (hyphen); this file uses your underscore name. Say if you want the analysis reference updated to match.
 
 ---
 

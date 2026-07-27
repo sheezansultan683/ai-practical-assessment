@@ -1,7 +1,7 @@
 # Acceptance Criteria
 
 Checklist for verifying the Support Ticket Management System against
-[`requirements-analysis.md`](requirements-analysis.md). Each item cites `FR-*` /
+[`requirements_analysis.md`](requirements_analysis.md). Each item cites `FR-*` /
 `NFR-*` / `A-*` for traceability. Check off when verified.
 
 Items marked **(brief)** are the brief's own 11 Core Acceptance Criteria from
@@ -130,7 +130,7 @@ An item may carry more than one tag when verification spans layers.
 
 ## Documentation
 
-- [ ] `[insp]` `requirements-analysis.md` is present at repository root and reflects locked decisions
+- [ ] `[insp]` `requirements_analysis.md` is present at repository root and reflects locked decisions
 - [ ] `[insp]` `acceptance_criteria.md` (this file) is present and cites `FR-*` / `NFR-*` for traceability
 - [ ] `[insp]` Cursor rules exist under `.cursor/rules/` (`stack-and-conventions.mdc`, `ticket-lifecycle.mdc`)
 - [ ] `[cmd]` `[insp]` README enables a clean clone → run on Linux/macOS without tribal knowledge (`NFR-5`)

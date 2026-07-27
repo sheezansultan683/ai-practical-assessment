@@ -1,6 +1,6 @@
 # API Contract — Support Ticket Management System
 
-**Sources:** [`requirements-analysis.md`](requirements-analysis.md),
+**Sources:** [`requirements_analysis.md`](requirements_analysis.md),
 [`.cursor/rules/stack-and-conventions.mdc`](.cursor/rules/stack-and-conventions.mdc),
 [`.cursor/rules/ticket-lifecycle.mdc`](.cursor/rules/ticket-lifecycle.mdc)
 

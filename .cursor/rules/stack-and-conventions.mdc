@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Stack and conventions
 
-Canonical product decisions live in `requirements-analysis.md`. Do not invent conflicting rules.
+Canonical product decisions live in `requirements_analysis.md`. Do not invent conflicting rules.
 
 ## Stack
 

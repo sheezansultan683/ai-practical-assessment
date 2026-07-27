@@ -35,7 +35,7 @@ than my project's feature list.
 
 ## Functional Requirements
 
-Numbered for traceability. Each item maps to an entry in `acceptance-criteria.md` and, where
+Numbered for traceability. Each item maps to an entry in `acceptance_criteria.md` and, where
 automated, to a named test in `tests/`.
 
 ### Authentication and identity
@@ -248,6 +248,6 @@ repository root, per the Required Repository Structure (A-20).
 
 ## Traceability
 
-`FR-*` and `NFR-*` identifiers carry forward: `acceptance-criteria.md` cites them per checklist
+`FR-*` and `NFR-*` identifiers carry forward: `acceptance_criteria.md` cites them per checklist
 item, and test names reference them, so any single requirement can be traced from brief →
 analysis → criteria → test.
