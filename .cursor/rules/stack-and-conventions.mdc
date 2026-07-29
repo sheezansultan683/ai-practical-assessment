@@ -5,14 +5,15 @@ alwaysApply: true
 
 # Stack and conventions
 
-Canonical product decisions live in `requirements_analysis.md`. Do not invent conflicting rules.
+Canonical product decisions live in `requirements-analysis.md`. Do not invent conflicting rules.
 
 ## Stack
 
-- Backend: Django 5, DRF, SQLite (via `DATABASE_URL`), SimpleJWT, drf-spectacular
-- Frontend: React + Vite + TypeScript
+- Backend: Django 5, DRF, SQLite (via `DATABASE_URL`), SimpleJWT, drf-spectacular — under `src/backend/`
+- Frontend: React + Vite + TypeScript — under `src/frontend/`
+- Tests: repo-root `tests/` (not inside `src/`)
 - Auth: full-app JWT — every ticket/comment endpoint requires authentication
-- DB config: single env var `DATABASE_URL`; for SQLite, resolve the file to `BASE_DIR / "database" / "tickets.db"` (never cwd-relative). Commit `database/.gitkeep`. No Compose/Postgres in Core — switch later by changing the URL only
+- DB config: single env var `DATABASE_URL`; for SQLite, resolve the file to `REPO_ROOT / "database" / "tickets.db"` (`REPO_ROOT` = parent of `src/`, never cwd and never Django `BASE_DIR` alone). Commit `database/.gitkeep`. No Compose/Postgres in Core — switch later by changing the URL only
 - Settings modules: `base` / `dev` / `test` (no `production`); pytest-django points at `test`
 
 ## Identity

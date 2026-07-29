@@ -1,21 +1,22 @@
 # Data Model — Support Ticket Management System
 
-**Sources:** [`requirements_analysis.md`](requirements_analysis.md),
-[`api_contract.md`](api_contract.md),
+**Sources:** [`requirements-analysis.md`](requirements-analysis.md),
+[`api-contract.md`](api-contract.md),
 [`.cursor/rules/stack-and-conventions.mdc`](.cursor/rules/stack-and-conventions.mdc),
 [`.cursor/rules/ticket-lifecycle.mdc`](.cursor/rules/ticket-lifecycle.mdc)
 
 This document pins every column, FK, index, and constraint that should land in a
 migration. Persistence target for Core is **SQLite** at
-`BASE_DIR / "database" / "tickets.db"`, with engine/location from `DATABASE_URL`
-only and the SQLite path resolved against `BASE_DIR` — not the process cwd
+`REPO_ROOT / "database" / "tickets.db"`, with engine/location from `DATABASE_URL`
+only and the SQLite path resolved against the **repository root** (parent of
+`src/`) — not Django `BASE_DIR` under `src/backend/` and not the process cwd
 (A-22). Schema and constraints stay engine-portable so a later Postgres URL is
 a config change, not a model rewrite. App layout assumed below:
 
-| App | Models |
-|-----|--------|
-| `users` | `User` (custom) |
-| `tickets` | `Ticket`, `Comment` |
+| App | Models | Location |
+|-----|--------|----------|
+| `users` | `User` (custom) | `src/backend/users/` |
+| `tickets` | `Ticket`, `Comment` | `src/backend/tickets/` |
 
 App name is **`users`** everywhere (`AUTH_USER_MODEL = "users.User"`, table
 `users_user`, migration dependencies). Do not use `accounts`.
@@ -77,8 +78,8 @@ Custom user. Extends `AbstractBaseUser` + `PermissionsMixin`.
 | Field | Django type | null | blank | max_length | default | choices | Note |
 |-------|-------------|------|-------|------------|---------|---------|------|
 | `id` | `BigAutoField` (PK) | no | — | — | auto | — | |
-| `title` | `CharField` | no | no | **200** | — | — | Limit from `api_contract.md`; strip + min-1 enforced in service/serializer |
-| `description` | `TextField` | no | no | — (DB) | — | — | No DB `max_length`. Cap **5000** in the serializer (`api_contract.md`). `TextField` → textarea in admin; portable across SQLite and a later Postgres switch |
+| `title` | `CharField` | no | no | **200** | — | — | Limit from `api-contract.md`; strip + min-1 enforced in service/serializer |
+| `description` | `TextField` | no | no | — (DB) | — | — | No DB `max_length`. Cap **5000** in the serializer (`api-contract.md`). `TextField` → textarea in admin; portable across SQLite and a later Postgres switch |
 | `priority` | `CharField` | no | no | 10 | — | `TicketPriority` (`LOW`, `MEDIUM`, `HIGH`) | Required on create; no DB default — client must send it |
 | `status` | `CharField` | no | no | 20 | **`OPEN`** | `TicketStatus` (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`, `CANCELLED`) | Always `OPEN` on create (A-8); only transition endpoint may change it |
 | `assigned_to` | `ForeignKey(User)` | **yes** | yes | — | `null` | — | Optional / untriaged (C-6). See FK table |
@@ -97,7 +98,7 @@ Custom user. Extends `AbstractBaseUser` + `PermissionsMixin`.
 |-------|-------------|------|-------|------------|---------|---------|------|
 | `id` | `BigAutoField` (PK) | no | — | — | auto | — | |
 | `ticket` | `ForeignKey(Ticket)` | no | no | — | — | — | Parent ticket. See FK table |
-| `message` | `TextField` | no | no | — (DB) | — | — | No DB `max_length`. Cap **2000** in the serializer (`api_contract.md`). Same rationale as `Ticket.description` |
+| `message` | `TextField` | no | no | — (DB) | — | — | No DB `max_length`. Cap **2000** in the serializer (`api-contract.md`). Same rationale as `Ticket.description` |
 | `created_by` | `ForeignKey(User)` | no | no | — | — | — | From `request.user` (FR-28). See FK table |
 | `created_at` | `DateTimeField` | no | — | — | `auto_now_add=True` | — | Append-only; no `updated_at` |
 
@@ -288,8 +289,8 @@ dependencies = [
 
 **Rejected in favour of `CharField` + `TextChoices` + `CheckConstraint`.**
 
-- We run on **SQLite** now (`BASE_DIR / "database" / "tickets.db"` via
-  `DATABASE_URL` + `BASE_DIR` resolution). SQLite has no native ENUM type; a
+- We run on **SQLite** now (`REPO_ROOT / "database" / "tickets.db"` via
+  `DATABASE_URL` + repository-root resolution). SQLite has no native ENUM type; a
   Postgres-only ENUM would block the one-env-var engine switch and force
   divergent schemas.
 - What we actually prefer: plain `text`/`varchar` columns that speak the API’s uppercase strings with no cast layer, and Django/`TextChoices` as the app-side source of truth for serializers and forms — portable across SQLite today and Postgres later.

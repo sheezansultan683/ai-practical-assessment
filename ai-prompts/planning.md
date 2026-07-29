@@ -433,7 +433,7 @@ Also updated `.gitignore` so `.cursor/*` is ignored but `.cursor/rules/**` is no
 
 **User**
 
-we have  now @requirements-analysis.md  and required.mdc file now we work on creating acceptance_criteria.md  in this format # Acceptance Criteria
+we have  now @requirements-analysis.md  and required.mdc file now we work on creating acceptance-criteria.md  in this format # Acceptance Criteria
 ## Core  - [ ] ...   ## Validation  - [ ] ...
 ## Error Handling  - [ ] ...   ## Testing  - [ ] ...
 ## Documentation  - [ ] ...
@@ -447,9 +447,9 @@ we have  now @requirements-analysis.md  and required.mdc file now we work on cre
 
 
 
-I'll draft `acceptance_criteria.md` from `requirements-analysis.md` and the Cursor rules, using your section layout and FR/NFR traceability.
+I'll draft `acceptance-criteria.md` from `requirements-analysis.md` and the Cursor rules, using your section layout and FR/NFR traceability.
 
-Created [`acceptance_criteria.md`](acceptance_criteria.md) with your section layout:
+Created [`acceptance-criteria.md`](acceptance-criteria.md) with your section layout:
 
 - **Core** — auth, tickets, transitions, comments, CSV, seed
 - **Validation** — field/backend rules and service-layer authority
@@ -465,7 +465,7 @@ Note: the analysis doc mentions `acceptance-criteria.md` (hyphen); this file use
 
 **User**
 
-I reviewed the @acceptance_criteria.md  I found few gaps can you please check
+I reviewed the @acceptance-criteria.md  I found few gaps can you please check
 Two requirements are missing entirely — add them:
    - A-16 pagination on the ticket list, default page size 20
    - NFR-9 indexes on the filter and search columns
@@ -484,9 +484,9 @@ Two requirements are missing entirely — add them:
 
 
 
-Updating `acceptance_criteria.md`: adding pagination and indexes, verification tags with a legend, and `(brief)` markers on the brief's 11 core criteria.
+Updating `acceptance-criteria.md`: adding pagination and indexes, verification tags with a legend, and `(brief)` markers on the brief's 11 core criteria.
 
-Updated [`acceptance_criteria.md`](acceptance_criteria.md):
+Updated [`acceptance-criteria.md`](acceptance-criteria.md):
 
 **Added**
 - Pagination default page size 20 (`A-16`) under Core, plus a matching test item

@@ -1,7 +1,7 @@
 # Acceptance Criteria
 
 Checklist for verifying the Support Ticket Management System against
-[`requirements_analysis.md`](requirements_analysis.md). Each item cites `FR-*` /
+[`requirements-analysis.md`](requirements-analysis.md). Each item cites `FR-*` /
 `NFR-*` / `A-*` for traceability. Check off when verified.
 
 Items marked **(brief)** are the brief's own 11 Core Acceptance Criteria from
@@ -50,7 +50,7 @@ An item may carry more than one tag when verification spans layers.
 - [ ] `[int]` Status cannot be changed via the field-update endpoint (`FR-19`)
 - [ ] `[int]` `[ui]` Field updates on `CLOSED` or `CANCELLED` tickets are rejected; UI disables the edit form (`FR-20`, `A-7`)
 - [ ] `[int]` `updated_at` reflects the most recent ticket modification (`FR-21`)
-- [ ] `[cmd]` `[ui]` **(brief)** Data persists in SQLite (`BASE_DIR / "database" / "tickets.db"` via `DATABASE_URL`) and remains available after an application restart (`NFR-1`, `A-22`)
+- [ ] `[cmd]` `[ui]` **(brief)** Data persists in SQLite (`REPO_ROOT / "database" / "tickets.db"` via `DATABASE_URL`) and remains available after an application restart (`NFR-1`, `A-22`)
 
 ### Status transitions
 
@@ -131,13 +131,14 @@ An item may carry more than one tag when verification spans layers.
 
 ## Documentation
 
-- [ ] `[insp]` `requirements_analysis.md` is present at repository root and reflects locked decisions
-- [ ] `[insp]` `acceptance_criteria.md` (this file) is present and cites `FR-*` / `NFR-*` for traceability
+- [ ] `[insp]` `requirements-analysis.md` is present at repository root and reflects locked decisions
+- [ ] `[insp]` `acceptance-criteria.md` (this file) is present and cites `FR-*` / `NFR-*` for traceability
 - [ ] `[insp]` Cursor rules exist under `.cursor/rules/` (`stack-and-conventions.mdc`, `ticket-lifecycle.mdc`)
 - [ ] `[cmd]` `[insp]` README enables a clean clone → run on Linux/macOS without tribal knowledge (`NFR-5`)
 - [ ] `[insp]` **(brief)** No secrets committed to the repo; `.env.example` documents required env vars with no real values (`NFR-6`)
 - [ ] `[insp]` `[ui]` API is documented via OpenAPI generated from code (drf-spectacular) (`NFR-10`)
-- [ ] `[insp]` `[cmd]` Database file is `BASE_DIR / "database" / "tickets.db"`, configured via `DATABASE_URL` with path resolved against `BASE_DIR`; `database/.gitkeep` is committed; schema dump uses `sqlite3 … .schema` (see `database/setup-notes.md`); Docker/Postgres Stretch deferred as a time call (`A-22`)
+- [ ] `[insp]` `[cmd]` Database file is `REPO_ROOT / "database" / "tickets.db"` (not under `src/`), configured via `DATABASE_URL` with path resolved against repository root; `database/.gitkeep` is committed; schema dump uses `sqlite3 … .schema` (see `database/setup-notes.md`); Docker/Postgres Stretch deferred as a time call (`A-22`)
+- [ ] `[insp]` Backend lives under `src/backend/`; frontend under `src/frontend/`; tests under repo-root `tests/` (`A-20`)
 - [ ] `[insp]` Known limitations called out where relevant (e.g. SQLite write lock / concurrent transition; token storage trade-off; Docker deferred)
 
 ---

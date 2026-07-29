@@ -37,7 +37,7 @@ than my project's feature list.
 
 ## Functional Requirements
 
-Numbered for traceability. Each item maps to an entry in `acceptance_criteria.md` and, where
+Numbered for traceability. Each item maps to an entry in `acceptance-criteria.md` and, where
 automated, to a named test in `tests/`.
 
 ### Authentication and identity
@@ -127,7 +127,7 @@ Like" criteria.
 
 | ID | Requirement |
 |----|-------------|
-| NFR-1 | All data persists in SQLite at `BASE_DIR / "database" / "tickets.db"` (engine/location from `DATABASE_URL` only; path resolved against `BASE_DIR`) and survives an application restart. |
+| NFR-1 | All data persists in SQLite at `REPO_ROOT / "database" / "tickets.db"` (engine/location from `DATABASE_URL` only; path resolved against repository root, not `src/` / cwd) and survives an application restart. |
 | NFR-2 | The backend is the sole authority on validation and on the transition rules. The frontend may not be trusted to enforce either. |
 | NFR-3 | The transition table has exactly **one** definition in the codebase. The frontend receives legal transitions from the API and never hardcodes them. |
 | NFR-4 | Business rules live in a service layer, not in serializers or views, so a second caller (management command, test) gets the same enforcement. |
@@ -167,9 +167,9 @@ that a reviewer can disagree with the reasoning rather than guess at it.
 | A-17 | Default sort | Newest first (`-created_at`). | Not specified in the brief. Most recent activity is the useful default for a ticket queue. |
 | A-18 | Search scope | `q` matches title **or** description, case-insensitive substring (`icontains`), with no special index. | The brief requires "one working search or filter capability". At seed scale a sequential scan is irrelevant. Full-text / trigram (e.g. after a Postgres switch) is the upgrade path, not built now. |
 | A-19 | Deletes | No ticket or comment deletion, hard or soft. | Not in the brief's feature list, and deletion interacts awkwardly with an audit-bearing lifecycle. |
-| A-20 | Repository layout | Lifecycle documents at repository root, using the exact filenames from the brief's Required Repository Structure. | The brief contradicts itself: Common Technical Requirements says artifacts live "in /artifacts folder", while the Required Repository Structure lists them at root. The structure diagram is the more specific instruction and names exact filenames. Flagged as C-7. |
+| A-20 | Repository layout | Brief Required Repository Structure at repo root: lifecycle docs, `src/backend` + `src/frontend`, `tests/`, `database/`, `ai-prompts/`, `tool-specific/`. Application code only under `src/`. | The brief contradicts itself on `/artifacts` vs root; the structure diagram is the more specific instruction. Flagged as C-7. |
 | A-21 | Token storage | Access token held in memory; refresh token in `localStorage`. | A refresh token in an `httpOnly` cookie is more secure but requires custom views and CSRF handling. Accepted trade-off for an internal exercise, recorded as a known limitation rather than left unexamined. |
-| A-22 | Database | SQLite file at `BASE_DIR / "database" / "tickets.db"`, configured through `DATABASE_URL` with the SQLite path resolved against `BASE_DIR` (not cwd). `database/.gitkeep` is committed so the folder exists after clone. No Docker Compose / Postgres in this delivery. | Brief asks for a `database/` folder artifact. One env var keeps a later Postgres move as config-only. Cwd-relative `sqlite:///./…` would create the file under the wrong tree if `manage.py` is run from a subdir. Docker Stretch dropped as a **time call**, not because Compose is unfit. SQLite locks the whole DB on write, so the documented concurrent-transition race surfaces as `database is locked` rather than a silent lost update. Tests use a separate Django test DB and must not wipe the app file. |
+| A-22 | Database | SQLite file at `REPO_ROOT / "database" / "tickets.db"`, configured through `DATABASE_URL` with the SQLite path resolved against **repository root** (parent of `src/`), not Django `BASE_DIR` under `src/backend/` and not cwd. `database/.gitkeep` is committed so the folder exists after clone. No Docker Compose / Postgres in this delivery. | Brief asks for a `database/` folder at repo root. One env var keeps a later Postgres move as config-only. If resolved against `BASE_DIR` inside `src/`, the file would land under `src/`. Docker Stretch dropped as a **time call**, not because Compose is unfit. SQLite locks the whole DB on write, so the documented concurrent-transition race surfaces as `database is locked` rather than a silent lost update. Tests under `tests/` use a separate Django test DB and must not wipe the app file. |
 
 ---
 
@@ -251,6 +251,6 @@ repository root, per the Required Repository Structure (A-20).
 
 ## Traceability
 
-`FR-*` and `NFR-*` identifiers carry forward: `acceptance_criteria.md` cites them per checklist
+`FR-*` and `NFR-*` identifiers carry forward: `acceptance-criteria.md` cites them per checklist
 item, and test names reference them, so any single requirement can be traced from brief →
 analysis → criteria → test.
