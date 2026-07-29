@@ -559,6 +559,8 @@ No body. `{id}` must be a positive integer.
 
 For `CLOSED` / `CANCELLED`, `allowed_transitions` is `[]`.
 
+`comments` are ordered newest first (`-created_at`), matching `Comment` model `Meta.ordering`.
+
 #### Validation Rules
 
 `{id}` must resolve to an existing ticket.
