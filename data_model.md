@@ -6,12 +6,19 @@
 [`.cursor/rules/ticket-lifecycle.mdc`](.cursor/rules/ticket-lifecycle.mdc)
 
 This document pins every column, FK, index, and constraint that should land in a
-migration. App layout assumed below:
+migration. Persistence target for Core is **SQLite** at
+`BASE_DIR / "database" / "tickets.db"`, with engine/location from `DATABASE_URL`
+only and the SQLite path resolved against `BASE_DIR` — not the process cwd
+(A-22). Schema and constraints stay engine-portable so a later Postgres URL is
+a config change, not a model rewrite. App layout assumed below:
 
 | App | Models |
 |-----|--------|
 | `users` | `User` (custom) |
 | `tickets` | `Ticket`, `Comment` |
+
+App name is **`users`** everywhere (`AUTH_USER_MODEL = "users.User"`, table
+`users_user`, migration dependencies). Do not use `accounts`.
 
 ---
 
@@ -71,7 +78,7 @@ Custom user. Extends `AbstractBaseUser` + `PermissionsMixin`.
 |-------|-------------|------|-------|------------|---------|---------|------|
 | `id` | `BigAutoField` (PK) | no | — | — | auto | — | |
 | `title` | `CharField` | no | no | **200** | — | — | Limit from `api_contract.md`; strip + min-1 enforced in service/serializer |
-| `description` | `TextField` | no | no | — (DB) | — | — | No DB `max_length`. Cap **5000** in the serializer (`api_contract.md`). `TextField` → textarea in admin; in Postgres `text` and `varchar(n)` are equivalent for storage/speed |
+| `description` | `TextField` | no | no | — (DB) | — | — | No DB `max_length`. Cap **5000** in the serializer (`api_contract.md`). `TextField` → textarea in admin; portable across SQLite and a later Postgres switch |
 | `priority` | `CharField` | no | no | 10 | — | `TicketPriority` (`LOW`, `MEDIUM`, `HIGH`) | Required on create; no DB default — client must send it |
 | `status` | `CharField` | no | no | 20 | **`OPEN`** | `TicketStatus` (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`, `CANCELLED`) | Always `OPEN` on create (A-8); only transition endpoint may change it |
 | `assigned_to` | `ForeignKey(User)` | **yes** | yes | — | `null` | — | Optional / untriaged (C-6). See FK table |
@@ -160,7 +167,7 @@ Django adds a DB index on every `ForeignKey` by default (`db_index=True`). Those
 | `tickets_ticket(priority)` | `GET /api/tickets/?priority=…` |
 | `tickets_ticket(assigned_to_id)` | `GET /api/tickets/?assigned_to=…` (FK default index) |
 | `tickets_ticket(created_by_id)` | `GET /api/tickets/export/` — `WHERE created_by_id = request.user` (FK default index) |
-| `tickets_ticket(created_at)` | Default list/export order `-created_at` (A-17). `models.Index(fields=["created_at"])` — Postgres can scan a btree backwards, so this covers `ORDER BY created_at DESC` without a descending index |
+| `tickets_ticket(created_at)` | Default list/export order `-created_at` (A-17). `models.Index(fields=["created_at"])` — SQLite (and Postgres) can use a plain btree for `ORDER BY created_at DESC`, so a descending index is unnecessary |
 | `tickets_comment(ticket_id)` | Detail / comment create — load comments for a ticket (FK default index) |
 | `tickets_comment(created_by_id)` | FK default only; no list filter by comment author in Core |
 
@@ -172,7 +179,7 @@ Django adds a DB index on every `ForeignKey` by default (`db_index=True`). Those
 
 No composite indexes for Core at seed scale — list filters do combine
 (`?status=…&priority=…&assigned_to=…&q=…`), but single-column indexes still
-cover each predicate and Postgres can AND them. The one composite that would
+cover each predicate and the planner can combine them. The one composite that would
 help later is `(created_by_id, created_at)` for the export query
 (`WHERE created_by_id = ? ORDER BY created_at DESC`); skip it until that path
 shows up in real volume.
@@ -195,9 +202,9 @@ shows up in real volume.
 | `ticket_priority_valid` | `priority IN ('LOW','MEDIUM','HIGH')` | Same for priority |
 | `user_role_valid` | `role IN ('AGENT','ADMIN')` | Same for role |
 
-`TextChoices` / `choices=` alone creates **no** database constraint — only app-level validation. These checks are kept for real DB protection.
+`TextChoices` / `choices=` alone creates **no** database constraint — only app-level validation. These checks are kept for real DB protection. **SQLite does enforce `CHECK` constraints** (as does Postgres), so this is not a Postgres-only feature.
 
-**Migration cost is not free:** adding or renaming a value means a migration that drops and recreates the check (same class of pain as altering a Postgres enum’s value set). We accept that cost for the integrity win; we are not claiming checks are cheaper to evolve than enums.
+**Migration cost is not free:** adding or renaming a value means a migration that drops and recreates the check. We accept that cost for the integrity win; we are not claiming checks are cheaper to evolve than native enum types.
 
 Not adding a check that encodes the transition graph — that is application/service-layer authority (NFR-2, NFR-4), not a row constraint.
 
@@ -277,13 +284,16 @@ dependencies = [
 
 ## 7. Considered and rejected
 
-### Native PostgreSQL `ENUM` types
+### Native database `ENUM` types (e.g. PostgreSQL `ENUM`)
 
 **Rejected in favour of `CharField` + `TextChoices` + `CheckConstraint`.**
 
-- Postgres enums and check constraints both need a migration when the allowed set changes (`ALTER TYPE` vs drop/recreate check). That cost is **not** why we rejected enums — see honesty note in §4.
-- What we actually prefer: plain `text`/`varchar` columns that speak the API’s uppercase strings with no cast layer, and Django/`TextChoices` as the app-side source of truth for serializers and forms.
-- Check constraints still add value Django `choices` does not: they stop invalid values at the DB even for raw SQL. We keep them knowing they share the same “change the set → write a migration” cost as enums.
+- We run on **SQLite** now (`BASE_DIR / "database" / "tickets.db"` via
+  `DATABASE_URL` + `BASE_DIR` resolution). SQLite has no native ENUM type; a
+  Postgres-only ENUM would block the one-env-var engine switch and force
+  divergent schemas.
+- What we actually prefer: plain `text`/`varchar` columns that speak the API’s uppercase strings with no cast layer, and Django/`TextChoices` as the app-side source of truth for serializers and forms — portable across SQLite today and Postgres later.
+- **SQLite does support `CHECK` constraints**, and Django’s `CheckConstraint` maps to them. Checks still add value Django `choices` does not: they stop invalid values at the DB even for raw SQL. We keep them knowing they share the same “change the set → write a migration” cost as native enums.
 - A-14 recorded the wire-format choice (uppercase `TextChoices` strings), not a claim that checks are free to evolve.
 
 ### `ticket_status_history` table

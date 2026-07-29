@@ -14,7 +14,7 @@ Items marked **(brief)** are the brief's own 11 Core Acceptance Criteria from
 | `[int]` | Integration test (API / DB) |
 | `[unit]` | Unit test |
 | `[ui]` | Manual UI check |
-| `[cmd]` | Run a command (seed, migrate, compose, test suite) |
+| `[cmd]` | Run a command (seed, migrate, test suite) |
 | `[insp]` | Inspect the repo / code / config |
 
 An item may carry more than one tag when verification spans layers.
@@ -50,7 +50,7 @@ An item may carry more than one tag when verification spans layers.
 - [ ] `[int]` Status cannot be changed via the field-update endpoint (`FR-19`)
 - [ ] `[int]` `[ui]` Field updates on `CLOSED` or `CANCELLED` tickets are rejected; UI disables the edit form (`FR-20`, `A-7`)
 - [ ] `[int]` `updated_at` reflects the most recent ticket modification (`FR-21`)
-- [ ] `[cmd]` `[ui]` **(brief)** Data persists in PostgreSQL and remains available after container/app restart (`NFR-1`)
+- [ ] `[cmd]` `[ui]` **(brief)** Data persists in SQLite (`BASE_DIR / "database" / "tickets.db"` via `DATABASE_URL`) and remains available after an application restart (`NFR-1`, `A-22`)
 
 ### Status transitions
 
@@ -76,9 +76,9 @@ An item may carry more than one tag when verification spans layers.
 
 ### Seed and ops
 
-- [ ] `[cmd]` `[insp]` Seed data covers all five statuses, all priorities, and multiple `created_by` users (`NFR-7`)
-- [ ] `[cmd]` Seed command is idempotent; running twice creates no duplicates (`NFR-8`)
-
+- [ ] `[cmd]` `[insp]` `python manage.py seed` covers all five statuses, all priorities, and multiple `created_by` users (`NFR-7`)
+- [ ] `[cmd]` `python manage.py seed` is idempotent; running twice creates no duplicates (`NFR-8`)
+- [ ] `[insp]` `database/.gitkeep` is committed so the folder exists after a clean clone (`A-22`)
 ---
 
 ## Validation
@@ -125,6 +125,7 @@ An item may carry more than one tag when verification spans layers.
 - [ ] `[int]` Tests cover unauthenticated access → 401 on protected endpoints (`FR-2`)
 - [ ] `[int]` Tests cover pagination default page size 20 and page navigation (`A-16`)
 - [ ] `[insp]` Transition allow-list has exactly one definition in the codebase (`NFR-3`)
+- [ ] `[insp]` `[cmd]` Tests use Django’s separate test database (`settings.test` / pytest-django), not the app’s `database/tickets.db` — the suite must not wipe seed data (`A-22`)
 
 ---
 
@@ -136,8 +137,8 @@ An item may carry more than one tag when verification spans layers.
 - [ ] `[cmd]` `[insp]` README enables a clean clone → run on Linux/macOS without tribal knowledge (`NFR-5`)
 - [ ] `[insp]` **(brief)** No secrets committed to the repo; `.env.example` documents required env vars with no real values (`NFR-6`)
 - [ ] `[insp]` `[ui]` API is documented via OpenAPI generated from code (drf-spectacular) (`NFR-10`)
-- [ ] `[cmd]` `[insp]` Docker Compose setup for PostgreSQL is documented and works from the README (`Stretch`)
-- [ ] `[insp]` Known limitations called out where relevant (e.g. concurrent transition race; token storage trade-off)
+- [ ] `[insp]` `[cmd]` Database file is `BASE_DIR / "database" / "tickets.db"`, configured via `DATABASE_URL` with path resolved against `BASE_DIR`; `database/.gitkeep` is committed; schema dump uses `sqlite3 … .schema` (see `database/setup-notes.md`); Docker/Postgres Stretch deferred as a time call (`A-22`)
+- [ ] `[insp]` Known limitations called out where relevant (e.g. SQLite write lock / concurrent transition; token storage trade-off; Docker deferred)
 
 ---
 

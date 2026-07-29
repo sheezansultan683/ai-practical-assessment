@@ -9,9 +9,11 @@ Canonical product decisions live in `requirements_analysis.md`. Do not invent co
 
 ## Stack
 
-- Backend: Django 5, DRF, PostgreSQL 16 (Docker Compose), SimpleJWT, drf-spectacular
+- Backend: Django 5, DRF, SQLite (via `DATABASE_URL`), SimpleJWT, drf-spectacular
 - Frontend: React + Vite + TypeScript
 - Auth: full-app JWT — every ticket/comment endpoint requires authentication
+- DB config: single env var `DATABASE_URL`; for SQLite, resolve the file to `BASE_DIR / "database" / "tickets.db"` (never cwd-relative). Commit `database/.gitkeep`. No Compose/Postgres in Core — switch later by changing the URL only
+- Settings modules: `base` / `dev` / `test` (no `production`); pytest-django points at `test`
 
 ## Identity
 

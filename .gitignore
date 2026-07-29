@@ -52,6 +52,12 @@ media/
 staticfiles/
 static_root/
 
+# Project SQLite DB (brief `database/` folder; file is local-only)
+database/tickets.db
+database/tickets.db-journal
+database/tickets.db-wal
+database/tickets.db-shm
+
 # Node / Vite / frontend
 node_modules/
 npm-debug.log*

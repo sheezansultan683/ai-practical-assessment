@@ -7,8 +7,15 @@
 [`.cursor/rules/stack-and-conventions.mdc`](.cursor/rules/stack-and-conventions.mdc),
 [`.cursor/rules/ticket-lifecycle.mdc`](.cursor/rules/ticket-lifecycle.mdc)
 
-**Stack:** Django 5 + DRF + PostgreSQL 16 (Docker Compose) + SimpleJWT +
+**Stack:** Django 5 + DRF + SQLite (via `DATABASE_URL`) + SimpleJWT +
 drf-spectacular; React + Vite + TypeScript.
+
+**DB:** `DATABASE_URL` is the only place the database engine/location is
+configured. For SQLite, settings resolve the file path against `BASE_DIR`
+(not the process cwd), targeting `BASE_DIR / "database" / "tickets.db"`.
+Switching to Postgres later is one env var — no code change. Docker Compose /
+Postgres Stretch is **dropped on purpose as a time call**, not a technical
+rejection (see [`pr-description.md`](pr-description.md) Future Improvements).
 
 ---
 
@@ -33,8 +40,9 @@ finally assessment artifacts. Backend is the sole authority on validation and
 lifecycle; the UI consumes the contract and renders errors clearly.
 
 **Out of scope for Core:** user registration/CRUD UI, role-gated endpoints,
-ticket/comment delete, status history, reopen paths, concurrent
-`select_for_update` locking (documented limitation).
+ticket/comment delete, status history, reopen paths, Docker/Postgres (deferred
+time call), concurrent row-level locking (documented limitation — under SQLite
+this race shows up as `database is locked` rather than a silent lost update).
 
 **Done when:** all 11 brief acceptance criteria pass, `acceptance_criteria.md`
 checkboxes are verifiable against FR/NFR IDs, and a clean clone follows the
@@ -44,25 +52,38 @@ README on Linux/macOS.
 
 ## Task Breakdown
 
-### 1. Scaffold: settings split, custom user model, Compose, env
+### 1. Scaffold: settings split, custom user model, env
 
-- Create Django project and apps (`users`, `tickets`); Vite + React + TypeScript
-  frontend skeleton (login-gated shell only — no ticket UI yet).
-- Split settings (`base` / `local` / `production` or equivalent) so secrets and
-  DB config come from the environment with **no fallback defaults** (NFR-6).
+Backend scaffold only — no frontend in this task (that is Task 6).
+
+- Create Django project and apps (`users`, `tickets`).
+- Split settings into `base` / `dev` / `test` (no `production` module). `test`
+  is what pytest-django / `DJANGO_SETTINGS_MODULE` points at. Secrets and DB
+  config come from the environment with **no fallback defaults** (NFR-6).
+- Configure the database **only** from `DATABASE_URL` (e.g. via
+  `dj-database-url` or equivalent). For a SQLite URL, resolve the file path
+  against `BASE_DIR` so cwd never decides where the file lands — always
+  `BASE_DIR / "database" / "tickets.db"`. `.env.example` documents
+  `DATABASE_URL` (sqlite logical URL); do not rely on `sqlite:///./…` relative
+  to the shell’s working directory.
+- Commit `database/.gitkeep` so the folder exists after a clean clone (the
+  `.db` file is gitignored; without the directory SQLite fails with
+  “unable to open database file”). Ignore `database/tickets.db` in git.
 - Define custom `User` (`AbstractBaseUser` + `PermissionsMixin`,
   `USERNAME_FIELD = "email"`, no `username`) and custom `UserManager`
   **before** the first `migrate` (`AUTH_USER_MODEL = "users.User"` — see
   `data_model.md` §2).
-- Docker Compose for PostgreSQL 16; `.env.example` with placeholder keys only;
-  `.gitignore` excludes `.env`, secrets, and build artifacts.
+- `.env.example` with placeholder keys only; `.gitignore` excludes `.env`,
+  secrets, build artifacts, and `database/tickets.db`.
 - Install/pin: Django 5, DRF, SimpleJWT (+ blacklist), drf-spectacular,
-  psycopg, django-filter (or equivalent for list filters).
-- Confirm: `migrate` creates `users_user`, not `auth_user`; Compose DB is
-  reachable; missing env vars fail loudly.
+  django-filter (or equivalent for list filters), pytest-django as needed.
+  **No psycopg** — SQLite is stdlib. Do not add Compose files for Core.
+- Confirm: `migrate` creates `users_user`, not `auth_user`; DB file appears
+  under repo `database/` regardless of cwd; missing env vars fail loudly.
 
-**Exit criteria:** empty project boots against Compose Postgres with custom
-user model live; no secrets in the repo.
+**Exit criteria:** empty project boots against SQLite via `DATABASE_URL` +
+`BASE_DIR` resolution with custom user model live; `database/.gitkeep`
+committed; no secrets in the repo.
 
 ---
 
@@ -73,15 +94,15 @@ user model live; no secrets in the repo.
   status, priority, created_at (plus FK defaults), CheckConstraints for
   status/priority/role, Meta ordering `-created_at`.
 - Migration order: `users` → builtins → `tickets` → SimpleJWT blacklist tables.
-- Idempotent, transactional management command `seed_demo` (or equivalent)
+- Idempotent, transactional management command `seed` (`python manage.py seed`)
   covering all five statuses, all priorities, and multiple `created_by` users
   (NFR-7, NFR-8). Seed passwords only via env / documented demo values — never
   committed as production secrets.
-- Smoke: migrate → seed → seed again (no duplicates) → restart container and
-  confirm data persists (NFR-1).
+- Smoke: migrate → `seed` → `seed` again (no duplicates) → **restart the app**
+  and confirm data is still there (NFR-1).
 
 **Exit criteria:** schema matches the data model; seed is safe to re-run;
-persistence survives restart.
+persistence survives an application restart.
 
 ---
 
@@ -109,7 +130,9 @@ Build the lifecycle in isolation so views never become the source of truth
   (NFR-11): every valid edge succeeds; every invalid pair (same-status, skip,
   reopen, terminal-outgoing) is rejected and leaves DB status unchanged;
   unknown enum string is treated as malformed (400 path) vs lifecycle conflict
-  (409).
+  (409). Tests use Django’s **separate test database** (created/torn down by
+  the runner / pytest-django via `settings.test`) — never the app’s
+  `database/tickets.db`, so running the suite does not wipe seed data.
 
 **Exit criteria:** full transition matrix green with **zero** view/URL code;
 allow-list exists in exactly one place.
@@ -178,22 +201,23 @@ comment, transition rejection UX, CSV) work against the real API.
 
 ### 7. Remaining artifacts, debugging notes, code review, reflection
 
-- README: clone → env from `.env.example` → Compose up → migrate → seed →
-  run API + frontend → run tests (NFR-5). Document demo users without real
-  production secrets.
+- README: clone → env from `.env.example` → migrate → seed → run API +
+  frontend → run tests (NFR-5). No Compose step. Document demo users without
+  real production secrets.
 - Confirm root artifacts present:
   `requirements_analysis.md`, `acceptance_criteria.md`, `api_contract.md`,
   `data_model.md`, `implementation-plan.md`, Cursor rules under
-  `.cursor/rules/`.
-- Debugging notes: known limitations (concurrent transition race without
-  `select_for_update`; refresh token in `localStorage`; no status history /
-  reopen — C-1/C-5).
+  `.cursor/rules/`, plus `database/setup-notes.md` and `database/.gitkeep`.
+- Debugging notes: known limitations — SQLite write lock means concurrent
+  transitions surface as `database is locked` (not a silent lost update);
+  refresh token in `localStorage`; no status history / reopen (C-1/C-5);
+  Docker/Postgres Stretch deferred as a time call.
 - Walk `acceptance_criteria.md` end-to-end; tick items with
   `[int]` / `[ui]` / `[cmd]` / `[insp]` evidence.
 - Code review pass: service-layer boundaries, no duplicated allow-list, no
-  secrets, no delete endpoints, OpenAPI accurate.
+  secrets, no delete endpoints, OpenAPI accurate, no `psycopg` / Compose.
 - Short reflection (assessment write-up): what AI helped vs what required human
-  judgment (lifecycle gaps, CSV-vs-auth, terminal freeze).
+  judgment (lifecycle gaps, CSV-vs-auth, terminal freeze, SQLite time call).
 
 **Exit criteria:** reviewer can verify Core + Stretch evidence from README and
 artifacts alone; checklist complete.
@@ -204,7 +228,7 @@ artifacts alone; checklist complete.
 
 | Milestone | Scope | Primary evidence |
 |-----------|--------|------------------|
-| **M1 — Foundation** | Tasks 1–2 | Compose Postgres up; custom user; migrations; idempotent seed; data survives restart |
+| **M1 — Foundation** | Tasks 1–2 | `DATABASE_URL` + `BASE_DIR` → `database/tickets.db`; `database/.gitkeep`; custom user; migrations; `manage.py seed`; data still there after app restart |
 | **M2 — Lifecycle proven** | Task 3 | Full transition-matrix tests green; single allow-list in service layer |
 | **M3 — API complete** | Tasks 4–5 | Contract endpoints + JWT + CSV + OpenAPI; acceptance `[int]` items for Core API |
 | **M4 — Product usable** | Task 6 | UI satisfies brief’s 11 criteria against live backend |
@@ -221,8 +245,8 @@ wait on `allowed_transitions`.
 
 | Phase | Use AI for | Keep human-owned |
 |-------|------------|------------------|
-| Planning / specs | Drafting and tightening analysis, acceptance criteria, API contract, data model, Cursor rules from locked decisions | Product calls (terminal freeze, full-app JWT, list vs export scope, 409 vs 400) |
-| Scaffold (1) | Boilerplate settings split, Compose file, `.env.example`, project layout | Env fail-loud policy; `AUTH_USER_MODEL` before first migrate |
+| Planning / specs | Drafting and tightening analysis, acceptance criteria, API contract, data model, Cursor rules from locked decisions | Product calls (terminal freeze, full-app JWT, list vs export scope, 409 vs 400, SQLite time call) |
+| Scaffold (1) | Backend settings `base`/`dev`/`test`, `.env.example`, `database/.gitkeep` | Env fail-loud policy; `AUTH_USER_MODEL` before first migrate; `DATABASE_URL` + `BASE_DIR` path resolution |
 | Models / seed (2) | Model field scaffolding from `data_model.md`; seed data variety | FK/`on_delete`, indexes vs non-indexes, CheckConstraints, seed idempotency |
 | Transition service (3) | Generating the full valid/invalid matrix test table | Single allow-list definition; asserting DB unchanged on failure |
 | API (4–5) | View/serializer stubs, spectacular annotations, filter wiring | Error envelope consistency; CSV scope always `request.user`; no status on PATCH |
@@ -231,8 +255,9 @@ wait on `allowed_transitions`.
 
 **Guardrails (always):** feed agents the Cursor rules and contract docs; reject
 suggestions that duplicate the allow-list in the frontend, add delete endpoints,
-gate Core on `role`, commit `.env`, or put secrets in seed/README as if
-production-ready. Prefer smallest diffs; run the matrix tests after any
+gate Core on `role`, commit `.env` or `database/tickets.db`, reintroduce
+Compose/`psycopg` without an explicit decision, or put secrets in seed/README as
+if production-ready. Prefer smallest diffs; run the matrix tests after any
 lifecycle touch.
 
 ---
@@ -248,9 +273,10 @@ lifecycle touch.
 | R-5 | Treating invalid enum and invalid transition the same (both 400 or both 409) | Frontend cannot distinguish validation vs lifecycle conflict |
 | R-6 | Secrets or real passwords committed; env defaults that hide misconfig | NFR-6 / brief “no secrets” fail |
 | R-7 | Frontend hardcodes transitions for “better UX” | Breaks when API is source of truth; assessment ding on NFR-2/3 |
-| R-8 | Scope creep (reopen, RBAC, status history, deletes) | Misses Core deadline; invents rules the brief does not grant |
-| R-9 | Concurrent double-transition race (known limitation) | Rare lost update; only a problem if presented as solved |
+| R-8 | Scope creep (reopen, RBAC, status history, deletes, premature Docker) | Misses Core deadline; invents rules the brief does not grant |
+| R-9 | Concurrent double-transition under SQLite | Writers hit DB-wide lock → `database is locked` (not a silent lost update). Still a known limitation if presented as “solved concurrency” |
 | R-10 | Search/`q` over-engineered (trigram) or list unbounded | Wasted time / poor defaults vs A-16/A-18 |
+| R-11 | Hardcoding cwd-relative SQLite paths (`sqlite:///./…`) instead of `DATABASE_URL` + `BASE_DIR` | DB created under the wrong folder; clone fails without `database/`; Postgres switch stops being “one env var” |
 
 ---
 
@@ -263,11 +289,12 @@ lifecycle touch.
 | R-3 | Hard gate: no ticket views until matrix tests pass (Task Breakdown order) |
 | R-4 | Export queryset filters solely on `request.user`; ignore client scope params; integration test FR-33 |
 | R-5 | Contract + lifecycle rule: unknown status string → 400; allow-list miss → 409 with current/attempted/allowed |
-| R-6 | No defaults for secrets; `.env.example` placeholders only; `.gitignore`; seed docs use clearly demo credentials |
+| R-6 | No defaults for secrets; `.env.example` placeholders only; `.gitignore` includes `database/tickets.db`; seed docs use clearly demo credentials |
 | R-7 | UI maps buttons from response field only; code review checklist item in Task 7 |
-| R-8 | Clarifications C-1…C-7 already locked in analysis; Stretch only auth, OpenAPI, Compose, Cursor rules |
-| R-9 | Document in debugging notes; optional future `select_for_update` — do not claim fixed in Core |
+| R-8 | Clarifications C-1…C-7 already locked in analysis; Stretch is auth, OpenAPI, Cursor rules — Docker deferred as time call |
+| R-9 | Document in debugging notes / pr-description: SQLite lock behaviour; optional future `select_for_update` on Postgres — do not claim fixed in Core |
 | R-10 | Page size 20; `icontains` on title/description; no title/description btree (data model §3) |
+| R-11 | Parse `DATABASE_URL` in one settings module; resolve SQLite `NAME` against `BASE_DIR`; commit `database/.gitkeep` |
 
 Cross-check before calling the project done: walk
 [`acceptance_criteria.md`](acceptance_criteria.md) (including the brief’s

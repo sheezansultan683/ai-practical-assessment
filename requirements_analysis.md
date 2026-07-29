@@ -1,7 +1,7 @@
 # Requirement Analysis
 
 **Source brief:** [project_requirement.txt]
-**Stack:** Django 5 + Django REST Framework + PostgreSQL 16 (Docker Compose) + SimpleJWT; React + Vite + TypeScript
+**Stack:** Django 5 + Django REST Framework + SQLite (via `DATABASE_URL`) + SimpleJWT; React + Vite + TypeScript
 
 ---
 
@@ -9,7 +9,9 @@
 
 Support Ticket Management System (backend-heavy option). Mandatory Core, plus these Stretch
 items: JWT authentication with protected routes and API authorization, OpenAPI documentation
-via drf-spectacular, Docker setup for the database, and reusable Cursor rules as project specs.
+via drf-spectacular, and reusable Cursor rules as project specs. Docker Compose / Postgres was
+a Stretch option; it is **deferred on purpose as a time call**, not a technical rejection —
+`DATABASE_URL` stays the single DB config point so Postgres is a later env-var swap.
 
 ---
 
@@ -125,7 +127,7 @@ Like" criteria.
 
 | ID | Requirement |
 |----|-------------|
-| NFR-1 | All data persists in PostgreSQL and survives a container and application restart. |
+| NFR-1 | All data persists in SQLite at `BASE_DIR / "database" / "tickets.db"` (engine/location from `DATABASE_URL` only; path resolved against `BASE_DIR`) and survives an application restart. |
 | NFR-2 | The backend is the sole authority on validation and on the transition rules. The frontend may not be trusted to enforce either. |
 | NFR-3 | The transition table has exactly **one** definition in the codebase. The frontend receives legal transitions from the API and never hardcodes them. |
 | NFR-4 | Business rules live in a service layer, not in serializers or views, so a second caller (management command, test) gets the same enforcement. |
@@ -163,10 +165,11 @@ that a reviewer can disagree with the reasoning rather than guess at it.
 | A-15 | CSV contents | Ticket core fields plus a per-ticket comment count. Comment text is not flattened into the export. | "Details" is undefined in the brief. Concatenating multi-line comment bodies into a single CSV cell produces a file that is awkward to read and fragile to parse. A count conveys activity without that cost. |
 | A-16 | Pagination | Page-number pagination on the ticket list, default page size 20. | "View all tickets" is satisfiable with pagination, and an unbounded list endpoint is a habit worth not forming. Small enough seed data that it is visible either way. |
 | A-17 | Default sort | Newest first (`-created_at`). | Not specified in the brief. Most recent activity is the useful default for a ticket queue. |
-| A-18 | Search scope | `q` matches title **or** description, case-insensitive substring (`icontains`), with no special index. | The brief requires "one working search or filter capability". At seed scale a sequential scan is irrelevant. PostgreSQL trigram or full-text search is recorded as the upgrade path, not built now. |
+| A-18 | Search scope | `q` matches title **or** description, case-insensitive substring (`icontains`), with no special index. | The brief requires "one working search or filter capability". At seed scale a sequential scan is irrelevant. Full-text / trigram (e.g. after a Postgres switch) is the upgrade path, not built now. |
 | A-19 | Deletes | No ticket or comment deletion, hard or soft. | Not in the brief's feature list, and deletion interacts awkwardly with an audit-bearing lifecycle. |
 | A-20 | Repository layout | Lifecycle documents at repository root, using the exact filenames from the brief's Required Repository Structure. | The brief contradicts itself: Common Technical Requirements says artifacts live "in /artifacts folder", while the Required Repository Structure lists them at root. The structure diagram is the more specific instruction and names exact filenames. Flagged as C-7. |
 | A-21 | Token storage | Access token held in memory; refresh token in `localStorage`. | A refresh token in an `httpOnly` cookie is more secure but requires custom views and CSRF handling. Accepted trade-off for an internal exercise, recorded as a known limitation rather than left unexamined. |
+| A-22 | Database | SQLite file at `BASE_DIR / "database" / "tickets.db"`, configured through `DATABASE_URL` with the SQLite path resolved against `BASE_DIR` (not cwd). `database/.gitkeep` is committed so the folder exists after clone. No Docker Compose / Postgres in this delivery. | Brief asks for a `database/` folder artifact. One env var keeps a later Postgres move as config-only. Cwd-relative `sqlite:///./…` would create the file under the wrong tree if `manage.py` is run from a subdir. Docker Stretch dropped as a **time call**, not because Compose is unfit. SQLite locks the whole DB on write, so the documented concurrent-transition race surfaces as `database is locked` rather than a silent lost update. Tests use a separate Django test DB and must not wipe the app file. |
 
 ---
 
@@ -219,7 +222,7 @@ repository root, per the Required Repository Structure (A-20).
 | Transition from a terminal status (`CLOSED → OPEN`) | 409, status unchanged. |
 | Transition skipping a step (`OPEN → RESOLVED`) | 409, status unchanged. |
 | Transition to a status string that is not a valid enum value | 400 — this is malformed input, not a lifecycle conflict. |
-| Two concurrent requests transitioning the same ticket | Both may pass the check and one overwrites the other. Documented as a known limitation; the fix is `select_for_update()` inside the transaction. Decided deliberately, not overlooked. |
+| Two concurrent requests transitioning the same ticket | Under SQLite, writers take a DB-wide lock — contending transitions typically fail with `database is locked` rather than a silent lost update. Still documented as a known limitation (not row-level locking / `select_for_update`). Fix path when on Postgres: `select_for_update()` inside the transaction. Decided deliberately, not overlooked. |
 | `PATCH` attempting to set `status` | Rejected with a clear message pointing at the transition endpoint. |
 | Field update on a `CLOSED` ticket | 409, no fields modified. |
 | Comment added to a `CANCELLED` ticket | Succeeds (A-6). |
